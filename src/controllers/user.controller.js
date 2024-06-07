@@ -179,7 +179,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Unauthorized request");
     }
     const decodedToken = jwt.verify(
-      refreshAccessToken,
+      incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
     const user = await User.findById(decodedToken?._id);
@@ -217,35 +217,30 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-//change password
 const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword && !newPassword) {
     throw new ApiError(404, "Empty fields");
   }
   const user = await User.findById(req.user._id);
-  const isPasswordCorrect = user.isPasswordCorrect(oldPassword);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
   if (!isPasswordCorrect) {
-    throw new ApiError(400, "Password doesn't match");
+    throw new ApiError(400, "Old password is wrong!");
   }
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
 
-  return res.status(200).json(new ApiResponse(200), {}, "Password Changed!!");
+  return res.status(200).json(new ApiResponse(200, {}, "Password Changed!!"));
 });
 
-//get current user
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200),
-      req.user,
-      "Current User fetched successfully!!"
+      new ApiResponse(200, req.user, "Current User fetched successfully!!")
     );
 });
 
-//update account details
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
   if (!fullName && !email) {
@@ -454,5 +449,5 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory
+  getWatchHistory,
 };
